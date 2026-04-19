@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="My Budget">
+  <title>My Budget</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #0f0f13; color: #f0ece4; font-family: Georgia, serif; min-height: 100vh; padding-bottom: 40px; }
+    .saving { position: fixed; top: 10px; right: 10px; background: #4ade80; color: #0f0f13; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-family: Georgia, serif; opacity: 0; transition: opacity 0.3s; z-index: 999; }
+    .saving.show { opacity: 1; }
+    .loading { position: fixed; inset: 0; background: #0f0f13; display: flex; align-items: center; justify-content: center; z-index: 998; flex-direction: column; gap: 12px; }
+    .loading-text { color: #8b7355; font-size: 13px; letter-spacing: 2px; }
+    .spinner { width: 24px; height: 24px; border: 2px solid #2a2a3a; border-top-color: #8b7355; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .header { background: linear-gradient(135deg, #1a1a24 0%, #12121a 100%); border-bottom: 1px solid #2a2a3a; padding: 48px 24px 20px; }
+    .label { font-size: 11px; letter-spacing: 3px; color: #8b7355; text-transform: uppercase; margin-bottom: 6px; }
+    .big-num { font-size: 36px; color: #f0ece4; }
+    .sub { font-size: 14px; color: #8b7355; margin-left: 8px; }
+    .row { display: flex; justify-content: space-between; align-items: flex-end; }
+    .right { text-align: right; font-size: 13px; color: #8b7355; }
+    .right span { color: #c4b99a; display: block; }
+    .bar-wrap { margin-top: 16px; height: 6px; background: #2a2a3a; border-radius: 3px; overflow: hidden; }
+    .bar { height: 100%; border-radius: 3px; transition: width 0.5s ease, background 0.5s ease; }
+    .alert { margin-top: 10px; font-size: 12px; }
+    section { padding: 16px 24px; border-bottom: 1px solid #1e1e2a; }
+    section.dark { background: #12121a; }
+    .sec-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sec-title { font-size: 10px; letter-spacing: 3px; color: #8b7355; text-transform: uppercase; }
+    .sec-status { font-size: 11px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .card { display: flex; justify-content: space-between; align-items: center; background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 10px; cursor: pointer; transition: all 0.2s ease; }
+    .card.done { background: #1a2a1a; border-color: #2a4a2a; opacity: 0.6; }
+    .card-left { display: flex; align-items: center; gap: 7px; }
+    .card-name { font-size: 12px; color: #9a9a8a; }
+    .card-name.done { color: #4a6a4a; text-decoration: line-through; }
+    .card-sub { font-size: 10px; color: #4a4a5a; margin-top: 1px; }
+    .card-sub.done { color: #3a5a3a; }
+    .card-amt { font-size: 12px; color: #6a6a5a; }
+    .card-amt.done { color: #4a6a4a; }
+    .checkbox { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 2px solid #3a3a4a; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #0f0f13; font-weight: bold; }
+    .checkbox.done { background: #4ade80; border-color: #4ade80; }
+    .pot-card { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 10px; text-align: center; }
+    .pot-label { font-size: 11px; color: #8b7355; margin-bottom: 2px; }
+    .pot-amt { font-size: 12px; color: #c4b99a; font-weight: bold; }
+    .mini-bar-wrap { margin-top: 6px; height: 4px; background: #2a2a3a; border-radius: 2px; overflow: hidden; }
+    .mini-bar { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+    .input-row { display: flex; gap: 8px; margin-top: 10px; }
+    input, select { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; color: #f0ece4; padding: 10px 12px; font-size: 14px; outline: none; font-family: Georgia, serif; }
+    input::placeholder { color: #4a4a5a; }
+    input[type=number] { width: 80px; font-size: 16px; }
+    input.flex { flex: 1; }
+    select { flex: 1; color: #8b7355; font-size: 13px; }
+    select option { background: #1a1a24; }
+    .btn { border: none; border-radius: 8px; cursor: pointer; font-family: Georgia, serif; font-weight: bold; }
+    .btn-primary { background: #8b7355; color: #0f0f13; padding: 10px 20px; font-size: 13px; letter-spacing: 1px; }
+    .btn-secondary { background: #2a2a3a; color: #8b7355; padding: 8px 14px; font-size: 12px; }
+    .btn-ghost { background: #1a1a24; border: 1px solid #2a2a3a; color: #4a4a5a; padding: 8px 10px; font-size: 12px; }
+    .btn-ghost-gold { background: #1a1a24; border: 1px solid #2a2a3a; color: #8b7355; padding: 8px 14px; font-size: 12px; white-space: nowrap; }
+    .hint { font-size: 11px; color: #4a4a5a; margin-bottom: 8px; }
+    .week-markers { font-size: 11px; color: #4a4a5a; margin: 8px 0; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 20px; padding: 5px 12px; font-size: 12px; color: #c4b99a; }
+    .tag span { color: #8b7355; }
+    .entry { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #1a1a24; }
+    .entry-info { flex: 1; }
+    .entry-name { font-size: 14px; color: #f0ece4; }
+    .entry-meta { font-size: 11px; color: #8b7355; margin-top: 2px; }
+    .entry-amt { font-size: 16px; color: #c4b99a; margin-right: 14px; }
+    .entry-del { background: none; border: none; color: #3a3a4a; cursor: pointer; font-size: 20px; padding: 4px 8px; }
+    .empty { color: #3a3a4a; font-size: 14px; text-align: center; padding: 30px 0; }
+    .hair-row { display: flex; gap: 8px; align-items: center; }
+    .hair-info { flex: 1; background: #1a1a24; border: 1px solid #2a2a3a; border-radius: 8px; padding: 8px 12px; }
+    .hair-top { display: flex; justify-content: space-between; font-size: 13px; }
+    .grocery-bar-info { display: flex; justify-content: space-between; font-size: 11px; color: #8b7355; margin-bottom: 4px; }
+    .error-banner { background: #2a1a1a; border: 1px solid #4a2a2a; border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-size: 11px; color: #f87171; }
+  </style>
+</head>
+<body>
+
+<div class="saving" id="savingIndicator">Saved ✓</div>
+<div class="loading" id="loadingScreen">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading your budget...</div>
+</div>
+
+<div id="app" style="display:none"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAaf8SNKctqa8863ywO74TSgh2bjueO0zTf3zn8_nQrZmacnsOUzH_wpD4L-ZbGbwaGQ/exec';
+const PERSONAL_BUDGET = 300;
+const GROCERY_BUDGET = 150;
+const CATEGORIES = ["Makeup","Clothes","Skincare","Accessories","Home bits","Gifts","Coffee + Treats","Online","Other"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const FIXED_ITEMS = [
+  { label: "Peloton", amount: 53, date: "23rd Apr" },
+  { label: "Apple", amount: 10, date: "27th Apr" },
+  { label: "Nails", amount: 90, date: "28th Apr" },
+  { label: "Les Mills", amount: 33, date: "2nd May" },
+  { label: "Sugaring", amount: 98, date: "5th May" },
+  { label: "Netflix", amount: 14, date: "6th May" },
+];
+const BUDGET_ITEMS = [
+  { label: "💰 Savings", amount: 150 },
+  { label: "🛍 Personal pot", amount: 300 },
+  { label: "🔄 Buffer", amount: 169 },
+];
+
+function getMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}`;
+}
+
+let state = {
+  entries: [],
+  ticked: {},
+  grocerySpent: 0,
+  groceryMonthTotal: 0,
+  hairFund: 0,
+  monthKey: getMonthKey()
+};
+
+let saveTimer = null;
+let saveError = false;
+
+async function loadData() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=load`, { mode: 'cors' });
+    const text = await res.text();
+    const saved = JSON.parse(text);
+    if (saved && typeof saved === 'object') {
+      const currentMonth = getMonthKey();
+      if (saved.monthKey && saved.monthKey !== currentMonth) {
+        state.entries = [];
+        state.ticked = {};
+        state.grocerySpent = 0;
+        state.hairFund = saved.hairFund || 0;
+        state.monthKey = currentMonth;
+      } else {
+        state = { ...state, ...saved, monthKey: currentMonth };
+      }
+    }
+  } catch(e) {
+    saveError = true;
+  }
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  render();
+}
+
+function saveData() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      const data = encodeURIComponent(JSON.stringify(state));
+      await fetch(`${SCRIPT_URL}?action=save&data=${data}`, { mode: 'cors' });
+      saveError = false;
+      const ind = document.getElementById('savingIndicator');
+      ind.classList.add('show');
+      setTimeout(() => ind.classList.remove('show'), 1500);
+    } catch(e) {
+      saveError = true;
+    }
+  }, 800);
+}
+
+function barColor(pct) {
+  return pct < 60 ? "#4ade80" : pct < 85 ? "#facc15" : "#f87171";
+}
+
+function render() {
+  const now = new Date();
+  const monthLabel = MONTH_NAMES[now.getMonth()];
+  const total = state.entries.reduce((s, e) => s + e.amount, 0);
+  const remaining = PERSONAL_BUDGET - total;
+  const pct = Math.min((total / PERSONAL_BUDGET) * 100, 100);
+  const remainingFixed = FIXED_ITEMS.filter(i => !state.ticked[i.label]).reduce((s, i) => s + i.amount, 0);
+  const groceryPct = Math.min((state.grocerySpent / GROCERY_BUDGET) * 100, 100);
+  const byCategory = CATEGORIES.map(cat => ({
+    cat, total: state.entries.filter(e => e.category === cat).reduce((s, e) => s + e.amount, 0)
+  })).filter(c => c.total > 0).sort((a, b) => b.total - a.total);
+
+  document.getElementById('app').innerHTML = `
+    ${saveError ? '<div class="error-banner" style="margin:10px 24px">⚠ Couldn\'t connect to save data. Check your internet connection.</div>' : ''}
+
+    <div class="header">
+      <div class="label">Personal Spending</div>
+      <div class="row">
+        <div><span class="big-num">€${remaining.toFixed(0)}</span><span class="sub">remaining</span></div>
+        <div class="right">${monthLabel}<span>€${total.toFixed(0)} of €${PERSONAL_BUDGET}</span></div>
+      </div>
+      <div class="bar-wrap"><div class="bar" style="width:${pct}%;background:${barColor(pct)}"></div></div>
+      ${remaining < 0 ? `<div class="alert" style="color:#f87171">⚠ Over budget by €${Math.abs(remaining).toFixed(0)}</div>` : ''}
+      ${remaining >= 0 && remaining < 50 ? `<div class="alert" style="color:#facc15">✦ Almost there — €${remaining.toFixed(0)} left</div>` : ''}
+    </div>
+
+    <section>
+      <div class="sec-title">🛒 Midweek Shops</div>
+
+      <div style="font-size:10px;letter-spacing:2px;color:#4a4a5a;text-transform:uppercase;margin-bottom:4px">This Week</div>
+      <div class="grocery-bar-info"><span>€${state.grocerySpent} spent</span><span>€${Math.max(GROCERY_BUDGET - state.grocerySpent, 0)} left</span></div>
+      <div class="bar-wrap"><div class="bar" style="width:${groceryPct}%;background:${barColor(groceryPct)}"></div></div>
+
+      <div style="font-size:10px;letter-spacing:2px;color:#4a4a5a;text-transform:uppercase;margin-bottom:4px;margin-top:12px">This Month</div>
+      <div class="grocery-bar-info"><span>€${state.groceryMonthTotal} spent</span><span>€${Math.max(600 - state.groceryMonthTotal, 0)} left of €600</span></div>
+      <div class="bar-wrap"><div class="bar" style="width:${Math.min((state.groceryMonthTotal/600)*100,100)}%;background:${barColor(Math.min((state.groceryMonthTotal/600)*100,100))}"></div></div>
+
+      <div class="week-markers">Weekly target: €150 · Tap ↺ to reset weekly · Monthly limit: €600</div>
+      <div class="input-row">
+        <input class="flex" type="number" id="groceryInput" placeholder="Update this week's total…" inputmode="decimal">
+        <button class="btn btn-secondary" onclick="updateGroceries()">UPDATE</button>
+        <button class="btn btn-ghost" onclick="resetGroceries()">↺</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-header">
+        <div class="sec-title">💇 Hair Fund</div>
+        <div class="sec-status" style="color:${state.hairFund >= 250 ? '#4ade80' : '#c4b99a'}">
+          ${state.hairFund >= 250 ? '✓ Ready for appointment!' : `€${250 - state.hairFund} still to save`}
+        </div>
+      </div>
+      <div class="hint">Set aside €83/month — tap + €83 when done</div>
+      <div class="hair-row">
+        <div class="hair-info">
+          <div class="hair-top"><span style="color:#9a9a8a">Saved so far</span><span style="color:#c4b99a;font-weight:bold">€${state.hairFund} / €250</span></div>
+          <div class="mini-bar-wrap"><div class="mini-bar" style="width:${Math.min((state.hairFund/250)*100,100)}%;background:#8b7355"></div></div>
+        </div>
+        <button class="btn btn-ghost-gold" onclick="addHair()">+ €83</button>
+        <button class="btn btn-ghost" onclick="resetHair()">↺</button>
+      </div>
+    </section>
+
+    <section class="dark">
+      <div class="sec-header">
+        <div class="sec-title">Fixed This Month</div>
+        <div class="sec-status" style="color:${remainingFixed > 0 ? '#facc15' : '#4ade80'}">
+          ${remainingFixed > 0 ? `€${remainingFixed} still to come` : '✓ All paid!'}
+        </div>
+      </div>
+      <div class="grid2">
+        ${FIXED_ITEMS.map(({ label, amount, date }) => {
+          const done = !!state.ticked[label];
+          return `<div class="card ${done ? 'done' : ''}" onclick="toggleTick('${label}')">
+            <div class="card-left">
+              <div class="checkbox ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
+              <div>
+                <div class="card-name ${done ? 'done' : ''}">${label}</div>
+                <div class="card-sub ${done ? 'done' : ''}">${date}</div>
+              </div>
+            </div>
+            <span class="card-amt ${done ? 'done' : ''}">€${amount}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="grid3">
+        ${BUDGET_ITEMS.map(({ label, amount }) => `
+          <div class="pot-card">
+            <div class="pot-label">${label}</div>
+            <div class="pot-amt">€${amount}</div>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-title" style="margin-bottom:14px">Add Purchase</div>
+      <div class="input-row" style="margin-top:0;margin-bottom:10px">
+        <input type="number" id="amtInput" placeholder="€0" inputmode="decimal">
+        <input class="flex" type="text" id="descInput" placeholder="What did you buy?">
+      </div>
+      <div class="input-row" style="margin-top:0">
+        <select id="catSelect">
+          ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" onclick="addEntry()">ADD</button>
+      </div>
+    </section>
+
+    ${byCategory.length > 0 ? `
+    <section>
+      <div class="sec-title" style="margin-bottom:12px">By Category</div>
+      <div class="tags">
+        ${byCategory.map(({ cat, total }) => `<div class="tag">${cat} <span>€${total.toFixed(0)}</span></div>`).join('')}
+      </div>
+    </section>` : ''}
+
+    <section>
+      <div class="sec-title" style="margin-bottom:12px">This Month</div>
+      ${state.entries.length === 0 ? '<div class="empty">Nothing logged yet ✦</div>' :
+        [...state.entries].reverse().map(e => `
+          <div class="entry">
+            <div class="entry-info">
+              <div class="entry-name">${e.description}</div>
+              <div class="entry-meta">${e.category} · ${e.date}</div>
+            </div>
+            <div class="entry-amt">€${e.amount.toFixed(0)}</div>
+            <button class="entry-del" onclick="removeEntry(${e.id})">×</button>
+          </div>
+        `).join('')
+      }
+    </section>
+  `;
+
+  if (window._lastCat) {
+    const sel = document.getElementById('catSelect');
+    if (sel) sel.value = window._lastCat;
+  }
+}
+
+function toggleTick(label) { state.ticked[label] = !state.ticked[label]; saveData(); render(); }
+
+function addEntry() {
+  const amt = parseFloat(document.getElementById('amtInput').value);
+  const desc = document.getElementById('descInput').value.trim();
+  const cat = document.getElementById('catSelect').value;
+  if (!amt || amt <= 0 || !desc) return;
+  window._lastCat = cat;
+  state.entries.push({ id: Date.now(), amount: amt, description: desc, category: cat,
+    date: new Date().toLocaleDateString("en-IE", { day: "numeric", month: "short" }) });
+  saveData(); render();
+}
+
+function removeEntry(id) { state.entries = state.entries.filter(e => e.id !== id); saveData(); render(); }
+
+function updateGroceries() {
+  const val = parseFloat(document.getElementById('groceryInput').value);
+  if (isNaN(val) || val < 0) return;
+  state.groceryMonthTotal = (state.groceryMonthTotal || 0) + val;
+  state.grocerySpent = val;
+  saveData(); render();
+}
+
+function resetGroceries() {
+  // Reset weekly but keep monthly running total
+  state.grocerySpent = 0;
+  saveData(); render();
+}
+function addHair() { state.hairFund = Math.min(state.hairFund + 83, 250); saveData(); render(); }
+function resetHair() { state.hairFund = 0; saveData(); render(); }
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    if (active && (active.id === 'amtInput' || active.id === 'descInput')) addEntry();
+    if (active && active.id === 'groceryInput') updateGroceries();
+  }
+});
+
+loadData();
+</script>
+
+</body>
+</html>
