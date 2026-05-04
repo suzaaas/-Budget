@@ -98,12 +98,12 @@ const GROCERY_BUDGET = 150;
 const CATEGORIES = ["Makeup","Clothes","Skincare","Accessories","Home bits","Gifts","Coffee + Treats","Online","Other"];
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const FIXED_ITEMS = [
-  { label: "Peloton", amount: 53, date: "23rd Apr" },
-  { label: "Apple", amount: 10, date: "27th Apr" },
-  { label: "Nails", amount: 90, date: "28th Apr" },
-  { label: "Les Mills", amount: 33, date: "2nd May" },
-  { label: "Sugaring", amount: 98, date: "5th May" },
-  { label: "Netflix", amount: 14, date: "6th May" },
+  { label: "Peloton", amount: 53 },
+  { label: "Apple", amount: 10 },
+  { label: "Nails", amount: 90 },
+  { label: "Les Mills", amount: 33 },
+  { label: "Sugaring", amount: 98 },
+  { label: "Netflix", amount: 14 },
 ];
 const BUDGET_ITEMS = [
   { label: "💰 Savings", amount: 150 },
@@ -121,6 +121,8 @@ let state = {
   ticked: {},
   grocerySpent: 0,
   groceryMonthTotal: 0,
+  woltSpent: 0,
+  woltMonthTotal: 0,
   hairFund: 0,
   monthKey: getMonthKey()
 };
@@ -219,6 +221,25 @@ function render() {
     </section>
 
     <section>
+      <div class="sec-title">🛵 Wolt / Takeaway</div>
+
+      <div style="font-size:10px;letter-spacing:2px;color:#4a4a5a;text-transform:uppercase;margin-bottom:4px">This Week</div>
+      <div class="grocery-bar-info"><span>€${state.woltSpent} spent</span><span>€${Math.max(50 - state.woltSpent, 0)} left</span></div>
+      <div class="bar-wrap"><div class="bar" style="width:${Math.min((state.woltSpent/50)*100,100)}%;background:${barColor(Math.min((state.woltSpent/50)*100,100))}"></div></div>
+
+      <div style="font-size:10px;letter-spacing:2px;color:#4a4a5a;text-transform:uppercase;margin-bottom:4px;margin-top:12px">This Month</div>
+      <div class="grocery-bar-info"><span>€${state.woltMonthTotal} spent</span><span>€${Math.max(200 - state.woltMonthTotal, 0)} left of €200</span></div>
+      <div class="bar-wrap"><div class="bar" style="width:${Math.min((state.woltMonthTotal/200)*100,100)}%;background:${barColor(Math.min((state.woltMonthTotal/200)*100,100))}"></div></div>
+
+      <div class="week-markers">Weekly target: €0 ideally · Limit: €50 · Monthly limit: €200</div>
+      <div class="input-row">
+        <input class="flex" type="number" id="woltInput" placeholder="Update this week's Wolt…" inputmode="decimal">
+        <button class="btn btn-secondary" onclick="updateWolt()">UPDATE</button>
+        <button class="btn btn-ghost" onclick="resetWolt()">↺</button>
+      </div>
+    </section>
+
+    <section>
       <div class="sec-header">
         <div class="sec-title">💇 Hair Fund</div>
         <div class="sec-status" style="color:${state.hairFund >= 250 ? '#4ade80' : '#c4b99a'}">
@@ -244,14 +265,13 @@ function render() {
         </div>
       </div>
       <div class="grid2">
-        ${FIXED_ITEMS.map(({ label, amount, date }) => {
+        ${FIXED_ITEMS.map(({ label, amount }) => {
           const done = !!state.ticked[label];
           return `<div class="card ${done ? 'done' : ''}" onclick="toggleTick('${label}')">
             <div class="card-left">
               <div class="checkbox ${done ? 'done' : ''}">${done ? '✓' : ''}</div>
               <div>
                 <div class="card-name ${done ? 'done' : ''}">${label}</div>
-                <div class="card-sub ${done ? 'done' : ''}">${date}</div>
               </div>
             </div>
             <span class="card-amt ${done ? 'done' : ''}">€${amount}</span>
@@ -337,8 +357,20 @@ function updateGroceries() {
 }
 
 function resetGroceries() {
-  // Reset weekly but keep monthly running total
   state.grocerySpent = 0;
+  saveData(); render();
+}
+
+function updateWolt() {
+  const val = parseFloat(document.getElementById('woltInput').value);
+  if (isNaN(val) || val < 0) return;
+  state.woltMonthTotal = (state.woltMonthTotal || 0) + val;
+  state.woltSpent = val;
+  saveData(); render();
+}
+
+function resetWolt() {
+  state.woltSpent = 0;
   saveData(); render();
 }
 function addHair() { state.hairFund = Math.min(state.hairFund + 83, 250); saveData(); render(); }
